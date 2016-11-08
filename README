@@ -1,0 +1,15 @@
+#Project Name
+
+Purpose of this project is to have simple monitoring tool, that will check process list for status of processes, and report if 
+some of them are missing.
+## Installation
+
+
+## Usage
+
+In a file `config.yaml` provide according to sample names of services that should be monitored.
+## Credits
+Mateusz Grabowski
+## License
+No distribiution, copying, or using outside of my agreement is allowed.
+To get the agreement contact me: matgrabowski at gmail dot com

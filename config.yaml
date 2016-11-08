@@ -1,5 +1,13 @@
 #Sample config:
 #processes:
 #    - ssh
+#
+#pid:
+#    - 12
+#
+
 processes:
-    - ssh
+    - zsh
+
+pid:
+    - 7404

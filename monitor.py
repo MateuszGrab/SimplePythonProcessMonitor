@@ -9,34 +9,38 @@ import click
 
 @click.command()
 @click.option('-c', '--config', help='Provide configuration file')
-@click.option('--fromcron', is_flag=True, help="Silence stdout")
-def runner_main(config,fromcron):
-    
+@click.option('-p', '--pid', is_flag=True, help='switch monitor to be based on PID instead of process names')
+def runner_main(config, pid=False):
     try:
-        config = get_configuration(config)
-        
+        config = get_configuration(config, pid)
         if isinstance(config, list):
-            get_ps_list(config)
+            get_ps_list(config, pid)
         else: 
             print "Config is not a list"    
     except TypeError:
-        suppressed_message_from_cron("ERROR: No configuration file provided for process monitor",fromcron)
-        syslog.syslog(syslog.LOG_ALERT, "ERROR: No configuration file for process monitor")
+        print "ERROR: No configuration file provided for process monitor" 
+        #syslog.syslog(syslog.LOG_ALERT, "ERROR: No configuration file for process monitor")
 
-def get_configuration(config_file):
+#@click.pass_context
+def get_configuration(config_file, pid=False):
     try:
-        with open(config_file, 'r') as ymlfile:
-            configuration = yaml.load(ymlfile)
+        if pid == True:
+            with open(config_file, 'r') as ymlfile:
+                configuration = yaml.load(ymlfile)
 
-        return configuration["processes"]
+                return configuration["pid"]
+        else:
+            with open(config_file, 'r') as ymlfile:
+                configuration = yaml.load(ymlfile)
 
+                return configuration["processes"]
     except IOError: 
-        suppressed_message_from_cron ("No such file or directory",fromcron)
+        print "No such file or directory"
 
-def get_ps_list(array_of_process_names):
-    # call class process
-    array_of_processes = []
+def get_ps_list(array_of_process_identificators, is_pid_true):
+    # Process identificator can be PID or Name
     
+    array_of_processes = []
     
     #Iterating over proess list
     for proc in psutil.process_iter():
@@ -47,26 +51,38 @@ def get_ps_list(array_of_process_names):
             pass
     
 
-    def search_in_dict(name, processes):
-        return [element for element in processes if element['name'] == name]
+    def search_in_dict_name(identificator, processes):
+        return [element for element in processes if element['name'] == identificator]
+     
+    def search_in_dict_pid(identificator, processes):
+        return [element for element in processes if element['pid'] == identificator]
 
-    for element in array_of_process_names:
-        result_of_search = search_in_dict(element,array_of_processes) 
-        if len(result_of_search) != 0:
-            for record in result_of_search:
-                message = 'PID: {r[pid]}, NAME {r[name]}, STATUS: {r[status]} '.format(r = record)
-                syslog.openlog("Python")
-                syslog.syslog(syslog.LOG_ALERT,message)
-                suppressed_message_from_cron("To syslog logged {}".format(message),fromcron)
-        else: 
-            suppressed_message_from_cron("Process not found",fromcron)
-            suppressed_message_from_cron("EXITING",fromcron)
+    if is_pid_true:
+        for element in array_of_process_identificators:
+            result_of_search = search_in_dict_pid(element,array_of_processes) 
+            if len(result_of_search) != 0:
+                for record in result_of_search:
+                    message = 'PID: {r[pid]}, NAME {r[name]}, STATUS: {r[status]} '.format(r = record)
+                    
+                    syslog.openlog("Python")
+                    syslog.syslog(syslog.LOG_ALERT,message)
+                    print "To syslog logged {}".format(message)
+            else: 
+                print "Processes not found"
 
-def suppressed_message_from_cron(message,fromcron):
-    if fromcron == False:
-        print message
+
     else:
-        pass
+        for element in array_of_process_identificators:
+            result_of_search = search_in_dict_name(element,array_of_processes) 
+            if len(result_of_search) != 0:
+                for record in result_of_search:
+                    message = 'PID: {r[pid]}, NAME {r[name]}, STATUS: {r[status]} '.format(r = record)
+                    
+                    syslog.openlog("Python")
+                    syslog.syslog(syslog.LOG_ALERT,message)
+                    print "To syslog logged {}".format(message)
+            else: 
+                print "Processes not found"
 
 
 # Run script if called directly
